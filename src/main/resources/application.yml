@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: demo3
+  profiles:
+    active: dev
+  messages:
+    encoding: UTF-8
