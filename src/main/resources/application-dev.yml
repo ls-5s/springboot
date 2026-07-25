@@ -46,5 +46,8 @@ logging:
   level:
     com.example.demo: debug
 
-knife4j:
-  enable: true
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
