@@ -1,15 +1,58 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
 const routes = [
-  {
-    path: '/',
-    name: 'Home',
-    component: () => import('@/views/Home.vue')
-  },
   {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/Login.vue')
+  },
+  {
+    path: '/',
+    component: DefaultLayout,
+    children: [
+      {
+        path: '',
+        name: 'Home',
+        component: () => import('@/views/Home.vue')
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/views/Profile.vue')
+      },
+      // 占位路由：后续页面开发时替换
+      {
+        path: 'articles',
+        name: 'Articles',
+        component: () => import('@/views/Placeholder.vue')
+      },
+      {
+        path: 'categories',
+        name: 'Categories',
+        component: () => import('@/views/Placeholder.vue')
+      },
+      {
+        path: 'tags',
+        name: 'Tags',
+        component: () => import('@/views/Placeholder.vue')
+      },
+      {
+        path: 'comments',
+        name: 'Comments',
+        component: () => import('@/views/Placeholder.vue')
+      },
+      {
+        path: 'links',
+        name: 'Links',
+        component: () => import('@/views/Placeholder.vue')
+      },
+      {
+        path: 'settings',
+        name: 'Settings',
+        component: () => import('@/views/Placeholder.vue')
+      }
+    ]
   }
 ]
 
@@ -22,14 +65,12 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
   if (to.path === '/login') {
-    // 已登录则跳过登录页
     if (token) {
       next('/')
     } else {
       next()
     }
   } else {
-    // 未登录则跳转登录页
     if (!token) {
       next('/login')
     } else {
