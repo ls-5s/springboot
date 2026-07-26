@@ -1,25 +1,118 @@
 package com.example.demo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.demo.common.exception.BusinessException;
 import com.example.demo.dto.ArticleDTO;
-import com.example.demo.model.entity.Article;
-import com.example.demo.model.entity.ArticleTag;
-import com.example.demo.repository.ArticleMapper;
-import com.example.demo.repository.ArticleTagMapper;
+import com.example.demo.dto.ArticleVO;
+import com.example.demo.model.entity.*;
+import com.example.demo.repository.*;
 import com.example.demo.service.ArticleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> implements ArticleService {
 
     private final ArticleTagMapper articleTagMapper;
+    private final CategoryMapper categoryMapper;
+    private final TagMapper tagMapper;
+    private final UserMapper userMapper;
+
+    // 文章列表：只查已发布，置顶优先 + 时间倒序
+    @Override
+    public IPage<Article> getArticleList(int page, int size, Long categoryId, Long tagId, String keyword) {
+        // 按标签筛选时，先查关联表获取文章 ID 列表
+        if (tagId != null) {
+            List<ArticleTag> relations = articleTagMapper.selectList(
+                    new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getTagId, tagId));
+            List<Long> articleIds = relations.stream()
+                    .map(ArticleTag::getArticleId).collect(Collectors.toList());
+            if (articleIds.isEmpty()) {
+                return new Page<>(page, size); // 无匹配文章，返回空页
+            }
+            LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<Article>()
+                    .in(Article::getId, articleIds)
+                    .eq(Article::getStatus, 1)
+                    .eq(categoryId != null, Article::getCategoryId, categoryId)
+                    .like(StringUtils.hasText(keyword), Article::getTitle, keyword)
+                    .orderByDesc(Article::getIsTop)
+                    .orderByDesc(Article::getCreateTime);
+            return page(new Page<>(page, size), wrapper);
+        }
+
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<Article>()
+                .eq(Article::getStatus, 1)
+                .eq(categoryId != null, Article::getCategoryId, categoryId)
+                .like(StringUtils.hasText(keyword), Article::getTitle, keyword)
+                .orderByDesc(Article::getIsTop)
+                .orderByDesc(Article::getCreateTime);
+        return page(new Page<>(page, size), wrapper);
+    }
+
+    // 文章详情：文章 + 分类名 + 作者昵称 + 标签列表
+    @Override
+    public ArticleVO getArticleDetail(Long id) {
+        Article article = getById(id);
+        if (article == null) {
+            throw new BusinessException("文章不存在");
+        }
+
+        // 分类名称
+        String categoryName = null;
+        if (article.getCategoryId() != null) {
+            Category category = categoryMapper.selectById(article.getCategoryId());
+            categoryName = category != null ? category.getName() : null;
+        }
+
+        // 作者昵称
+        String authorName = null;
+        if (article.getUserId() != null) {
+            User user = userMapper.selectById(article.getUserId());
+            authorName = user != null ? (user.getNickname() != null ? user.getNickname() : user.getUsername()) : null;
+        }
+
+        // 标签列表
+        List<ArticleVO.TagVO> tags = Collections.emptyList();
+        List<ArticleTag> relations = articleTagMapper.selectList(
+                new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, id));
+        if (!relations.isEmpty()) {
+            List<Long> tagIds = relations.stream().map(ArticleTag::getTagId).collect(Collectors.toList());
+            List<Tag> tagList = tagMapper.selectBatchIds(tagIds);
+            tags = tagList.stream()
+                    .map(t -> ArticleVO.TagVO.builder().id(t.getId()).name(t.getName()).build())
+                    .collect(Collectors.toList());
+        }
+
+        return ArticleVO.builder()
+                .id(article.getId())
+                .title(article.getTitle())
+                .summary(article.getSummary())
+                .content(article.getContent())
+                .cover(article.getCover())
+                .categoryId(article.getCategoryId())
+                .categoryName(categoryName)
+                .userId(article.getUserId())
+                .authorName(authorName)
+                .viewCount(article.getViewCount())
+                .likeCount(article.getLikeCount())
+                .commentCount(article.getCommentCount())
+                .status(article.getStatus())
+                .isTop(article.getIsTop())
+                .tags(tags)
+                .createTime(article.getCreateTime())
+                .updateTime(article.getUpdateTime())
+                .build();
+    }
 
     // 发布文章：保存文章 + 关联标签
     @Override

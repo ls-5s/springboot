@@ -3,6 +3,7 @@ package com.example.demo.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -31,6 +32,12 @@ public class SecurityConfig {
                 // 公开接口：登录、注册、测试
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout").permitAll()
                 .requestMatchers("/api/test/**").permitAll()
+                // 公开接口：文章/分类/标签/评论/友链的 GET 请求
+                .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/tags/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/friend-links/**").permitAll()
                 // 公开接口：接口文档
                 .requestMatchers("/doc.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // 公开接口：Druid 监控

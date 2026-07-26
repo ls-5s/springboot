@@ -1,7 +1,10 @@
 package com.example.demo.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.demo.common.Result;
 import com.example.demo.dto.ArticleDTO;
+import com.example.demo.dto.ArticleVO;
+import com.example.demo.model.entity.Article;
 import com.example.demo.service.ArticleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -11,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-// 文章控制器：发布、修改、删除（需要登录）
+// 文章控制器：列表（公开）、发布/修改/删除（需要登录）
 @Tag(name = "文章接口")
 @Slf4j
 @RestController
@@ -20,6 +23,27 @@ import org.springframework.web.bind.annotation.*;
 public class ArticleController {
 
     private final ArticleService articleService;
+
+    // GET /api/articles — 文章列表（公开，分页 + 筛选）
+    @Operation(summary = "文章列表")
+    @GetMapping
+    public Result<IPage<Article>> list(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long tagId,
+            @RequestParam(required = false) String keyword) {
+        IPage<Article> result = articleService.getArticleList(page, size, categoryId, tagId, keyword);
+        return Result.success(result);
+    }
+
+    // GET /api/articles/{id} — 文章详情（公开）
+    @Operation(summary = "文章详情")
+    @GetMapping("/{id}")
+    public Result<ArticleVO> detail(@PathVariable Long id) {
+        ArticleVO vo = articleService.getArticleDetail(id);
+        return Result.success(vo);
+    }
 
     // POST /api/articles — 发布文章
     @Operation(summary = "发布文章")
