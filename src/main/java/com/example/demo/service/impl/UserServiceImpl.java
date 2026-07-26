@@ -4,9 +4,7 @@ import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.demo.common.exception.BusinessException;
-import com.example.demo.dto.LoginDTO;
-import com.example.demo.dto.LoginVO;
-import com.example.demo.dto.RegisterDTO;
+import com.example.demo.dto.*;
 import com.example.demo.model.entity.User;
 import com.example.demo.repository.UserMapper;
 import com.example.demo.service.UserService;
@@ -64,5 +62,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setEmail(dto.getEmail());
         user.setStatus(1);
         save(user);
+    }
+
+    // 查询当前用户信息
+    @Override
+    public UserInfoVO getCurrentUser(Long userId) {
+        User user = getById(userId);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        return UserInfoVO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .nickname(user.getNickname())
+                .email(user.getEmail())
+                .avatar(user.getAvatar())
+                .status(user.getStatus())
+                .build();
+    }
+
+    // 修改当前用户信息：只更新昵称、邮箱、头像
+    @Override
+    public void updateUserInfo(Long userId, UpdateUserDTO dto) {
+        User user = new User();
+        user.setId(userId);
+        user.setNickname(dto.getNickname());
+        user.setEmail(dto.getEmail());
+        user.setAvatar(dto.getAvatar());
+        updateById(user);
     }
 }
