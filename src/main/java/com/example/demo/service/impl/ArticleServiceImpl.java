@@ -147,6 +147,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return result;
     }
 
+    // 管理端文章列表：含草稿，按状态筛选
+    @Override
+    public IPage<Article> getAdminArticleList(int page, int size, String keyword, Integer status) {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<Article>()
+                .eq(status != null, Article::getStatus, status)
+                .like(StringUtils.hasText(keyword), Article::getTitle, keyword)
+                .orderByDesc(Article::getCreateTime);
+        return page(new Page<>(page, size), wrapper);
+    }
+
     // 发布文章：保存文章 + 关联标签
     @Override
     @Transactional

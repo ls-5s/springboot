@@ -1,10 +1,20 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { getArticlesApi, createArticleApi, updateArticleApi, deleteArticleApi } from '@/api/article'
+import { getAdminArticlesApi, createArticleApi, updateArticleApi, deleteArticleApi } from '@/api/article'
 import type { ArticleItem, ArticleDTO } from '@/api/article'
+import { getCategoriesApi } from '@/api/category'
+import type { CategoryItem } from '@/api/category'
+import { getTagsApi } from '@/api/tag'
+import type { TagItem } from '@/api/tag'
+import { uploadApi } from '@/api/upload'
 
-// 搜索 + 分页
+// 分类和标签数据
+const categories = ref<CategoryItem[]>([])
+const tags = ref<TagItem[]>([])
+
+// 搜索 + 分页 + 状态筛选
 const keyword = ref<string>('')
+const filterStatus = ref<number | undefined>(undefined)
 const articles = ref<ArticleItem[]>([])
 const total = ref<number>(0)
 const page = ref<number>(1)
@@ -23,18 +33,39 @@ const form = reactive<ArticleDTO>({
   content: '',
   cover: '',
   categoryId: undefined,
+  tagIds: [],
   status: 1,
   isTop: 0
 })
+
+const selectedTagIds = ref<number[]>([])
+
+const toggleTag = (id: number) => {
+  const idx = selectedTagIds.value.indexOf(id)
+  if (idx > -1) selectedTagIds.value.splice(idx, 1)
+  else selectedTagIds.value.push(id)
+}
+
+const handleUpload = async (e: Event) => {
+  const input = e.target as HTMLInputElement
+  if (!input.files?.length) return
+  try {
+    const res = await uploadApi(input.files[0])
+    form.cover = res.data.url
+  } catch (e: any) {
+    errorMsg.value = e.message || '上传失败'
+  }
+}
 
 const statusMap: Record<number, string> = { 0: '草稿', 1: '已发布', 2: '私密' }
 
 const fetchList = async () => {
   try {
-    const res = await getArticlesApi({
+    const res = await getAdminArticlesApi({
       page: page.value,
       size: pageSize.value,
-      keyword: keyword.value || undefined
+      keyword: keyword.value || undefined,
+      status: filterStatus.value
     })
     articles.value = res.data.records
     total.value = res.data.total
@@ -68,6 +99,7 @@ const handleCreate = () => {
   form.categoryId = undefined
   form.status = 1
   form.isTop = 0
+  selectedTagIds.value = []
   errorMsg.value = ''
   showModal.value = true
 }
@@ -81,6 +113,7 @@ const handleEdit = (item: ArticleItem) => {
   form.categoryId = item.categoryId
   form.status = item.status
   form.isTop = item.isTop
+  selectedTagIds.value = []
   errorMsg.value = ''
   showModal.value = true
 }
@@ -93,10 +126,11 @@ const handleSave = async () => {
   saving.value = true
   errorMsg.value = ''
   try {
+    const payload = { ...form, tagIds: selectedTagIds.value.length > 0 ? selectedTagIds.value : undefined }
     if (editingId.value) {
-      await updateArticleApi(editingId.value, form)
+      await updateArticleApi(editingId.value, payload)
     } else {
-      await createArticleApi(form)
+      await createArticleApi(payload)
     }
     showModal.value = false
     fetchList()
@@ -117,8 +151,10 @@ const handleDelete = async (item: ArticleItem) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   fetchList()
+  try { const c = await getCategoriesApi(); categories.value = c.data } catch { /* ignore */ }
+  try { const t = await getTagsApi(); tags.value = t.data } catch { /* ignore */ }
 })
 </script>
 
@@ -136,6 +172,12 @@ onMounted(() => {
         placeholder="搜索标题..."
         @keyup.enter="handleSearch"
       />
+      <select v-model="filterStatus" @change="handleSearch" class="status-select">
+        <option :value="undefined">全部状态</option>
+        <option :value="1">已发布</option>
+        <option :value="0">草稿</option>
+        <option :value="2">私密</option>
+      </select>
       <button class="search-btn" @click="handleSearch">搜索</button>
     </div>
 
@@ -211,8 +253,29 @@ onMounted(() => {
               <textarea v-model="form.content" placeholder="请输入正文" rows="8" />
             </div>
             <div class="field">
-              <label>封面图 URL</label>
-              <input v-model="form.cover" placeholder="https://..." />
+              <label>封面图</label>
+              <div class="cover-row">
+                <input v-model="form.cover" placeholder="输入 URL 或上传" />
+                <label class="upload-btn">
+                  上传
+                  <input type="file" accept="image/*" hidden @change="handleUpload" />
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label>分类</label>
+              <select v-model="form.categoryId">
+                <option :value="undefined">请选择分类</option>
+                <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </div>
+            <div class="field" v-if="tags.length">
+              <label>标签</label>
+              <div class="tag-list">
+                <span v-for="t in tags" :key="t.id"
+                      :class="['tag-chip', { on: selectedTagIds.includes(t.id) }]"
+                      @click="toggleTag(t.id)">{{ t.name }}</span>
+              </div>
             </div>
             <div class="inline">
               <div class="field flex-1">
@@ -269,6 +332,11 @@ onMounted(() => {
   font-size: 14px; outline: none; background: #fff; transition: border-color 0.2s;
 }
 .search-bar input:focus { border-color: #667eea; }
+.status-select {
+  padding: 9px 12px; border: 1.5px solid #e8e8e8; border-radius: 8px;
+  font-size: 14px; outline: none; background: #fff; color: #666; cursor: pointer;
+}
+.status-select:focus { border-color: #667eea; }
 .search-btn {
   padding: 9px 20px; border: none; border-radius: 8px;
   background: #667eea; color: #fff; font-size: 14px; cursor: pointer; transition: opacity 0.2s;
@@ -375,6 +443,24 @@ onMounted(() => {
   border-color: #667eea; background: #fff;
 }
 .field textarea { resize: vertical; }
+
+.cover-row { display: flex; gap: 8px; }
+.cover-row input { flex: 1; }
+.upload-btn {
+  display: inline-flex; align-items: center;
+  padding: 10px 16px; border: 1px dashed #c0c0c0; border-radius: 8px;
+  font-size: 13px; color: #999; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.upload-btn:hover { border-color: #667eea; color: #667eea; }
+
+.tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag-chip {
+  display: inline-block; padding: 4px 14px; border-radius: 14px;
+  font-size: 13px; cursor: pointer; transition: all 0.2s;
+  border: 1.5px solid #e5e7eb; color: #666; background: #fff;
+}
+.tag-chip:hover { border-color: #667eea; color: #667eea; }
+.tag-chip.on { background: #667eea; border-color: #667eea; color: #fff; }
 
 .inline { display: flex; gap: 16px; }
 .flex-1 { flex: 1; }

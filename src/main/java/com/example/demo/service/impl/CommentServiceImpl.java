@@ -2,23 +2,26 @@ package com.example.demo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.demo.dto.CommentDTO;
 import com.example.demo.dto.CommentVO;
 import com.example.demo.model.entity.Comment;
 import com.example.demo.model.entity.User;
 import com.example.demo.repository.CommentMapper;
 import com.example.demo.repository.UserMapper;
 import com.example.demo.service.CommentService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> implements CommentService {
 
     private final UserMapper userMapper;
+
+    public CommentServiceImpl(CommentMapper commentMapper, UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
 
     @Override
     public List<CommentVO> getCommentsByArticle(Long articleId) {
@@ -40,15 +43,16 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         }
 
         // 转 VO
+        final Map<Long, User> finalUserMap = userMap;
         List<CommentVO> allVos = all.stream().map(c -> {
-            String userName = c.getVisitorName();
             String avatar = null;
-            if (c.getUserId() != null) {
-                User u = userMap.get(c.getUserId());
-                if (u != null) {
-                    userName = u.getNickname() != null ? u.getNickname() : u.getUsername();
-                    avatar = u.getAvatar();
-                }
+            User u = c.getUserId() != null ? finalUserMap.get(c.getUserId()) : null;
+            String userName;
+            if (u != null) {
+                userName = u.getNickname() != null ? u.getNickname() : u.getUsername();
+                avatar = u.getAvatar();
+            } else {
+                userName = c.getVisitorName();
             }
             return CommentVO.builder()
                     .id(c.getId())
@@ -87,5 +91,18 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 .filter(v -> all.stream().anyMatch(c ->
                         c.getId().equals(v.getId()) && c.getParentId() == null))
                 .collect(Collectors.toList());
+    }
+
+    // 发表评论：登录用户或游客
+    @Override
+    public void createComment(Long userId, CommentDTO dto) {
+        Comment comment = new Comment();
+        comment.setArticleId(dto.getArticleId());
+        comment.setParentId(dto.getParentId());
+        comment.setContent(dto.getContent());
+        comment.setUserId(userId);
+        comment.setVisitorName(userId == null ? dto.getVisitorName() : null);
+        comment.setStatus(0); // 默认待审核
+        save(comment);
     }
 }

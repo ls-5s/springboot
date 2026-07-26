@@ -20,6 +20,9 @@ public interface ArticleService extends IService<Article> {
     // 文章归档（公开）
     List<ArchiveVO> getArchive();
 
+    // 文章管理列表（admin，含草稿）
+    IPage<Article> getAdminArticleList(int page, int size, String keyword, Integer status);
+
     // 发布文章
     Long createArticle(Long userId, ArticleDTO dto);
 

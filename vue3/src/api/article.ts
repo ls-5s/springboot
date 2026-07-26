@@ -47,6 +47,16 @@ export const getArticlesApi = (params: {
   return request.get('/articles', { params })
 }
 
+// 文章管理列表（admin，含草稿）
+export const getAdminArticlesApi = (params: {
+  page?: number
+  size?: number
+  keyword?: string
+  status?: number
+}): Promise<{ code: number; message: string; data: ArticlePage }> => {
+  return request.get('/admin/articles', { params })
+}
+
 // 发布文章
 export const createArticleApi = (data: ArticleDTO): Promise<{ code: number; message: string; data: number }> => {
   return request.post('/articles', data)
@@ -60,4 +70,19 @@ export const updateArticleApi = (id: number, data: ArticleDTO): Promise<{ code: 
 // 删除文章
 export const deleteArticleApi = (id: number): Promise<{ code: number; message: string; data: null }> => {
   return request.delete(`/articles/${id}`)
+}
+
+// 文章详情（公开）
+export const getArticleDetailApi = (id: number): Promise<{ code: number; message: string; data: ArticleItem }> => {
+  return request.get(`/articles/${id}`)
+}
+
+// 文章归档
+export interface ArchiveItem {
+  yearMonth: string
+  count: number
+  articles: { id: number; title: string; createTime: string }[]
+}
+export const getArchiveApi = (): Promise<{ code: number; message: string; data: ArchiveItem[] }> => {
+  return request.get('/articles/archive')
 }

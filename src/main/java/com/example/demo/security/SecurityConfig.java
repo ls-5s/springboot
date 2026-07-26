@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/tags/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/friend-links/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/site-info").permitAll()
                 // 公开接口：接口文档
                 .requestMatchers("/doc.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // 公开接口：Druid 监控
