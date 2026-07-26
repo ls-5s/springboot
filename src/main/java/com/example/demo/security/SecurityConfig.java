@@ -29,7 +29,7 @@ public class SecurityConfig {
             // 路径权限
             .authorizeHttpRequests(auth -> auth
                 // 公开接口：登录、注册、测试
-                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout").permitAll()
                 .requestMatchers("/api/test/**").permitAll()
                 // 公开接口：接口文档
                 .requestMatchers("/doc.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()

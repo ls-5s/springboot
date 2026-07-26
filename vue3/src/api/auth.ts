@@ -28,3 +28,8 @@ export const loginApi = (data: LoginParams): Promise<{ code: number; message: st
 export const registerApi = (data: RegisterParams): Promise<{ code: number; message: string; data: null }> => {
   return request.post('/auth/register', data)
 }
+
+// 退出登录
+export const logoutApi = (): Promise<{ code: number; message: string; data: null }> => {
+  return request.post('/auth/logout')
+}

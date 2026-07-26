@@ -50,4 +50,9 @@ public class Result<T> implements Serializable {
     public static <T> Result<T> fail(ResultCode resultCode) {
         return new Result<>(resultCode.getCode(), resultCode.getMessage(), null);
     }
+
+    // 失败：自定义状态码 + 提示 + 数据
+    public static <T> Result<T> fail(int code, String message, T data) {
+        return new Result<>(code, message, data);
+    }
 }

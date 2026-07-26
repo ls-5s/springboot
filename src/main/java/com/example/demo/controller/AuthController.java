@@ -44,4 +44,12 @@ public class AuthController {
         log.info("【注册成功】username={}", dto.getUsername());
         return Result.success();
     }
+
+    // POST /api/auth/logout — 退出登录（JWT 无状态，服务端无需操作，客户端负责删除 token）
+    @Operation(summary = "退出登录")
+    @PostMapping("/logout")
+    public Result<Void> logout() {
+        log.info("【退出登录】");
+        return Result.success();
+    }
 }
