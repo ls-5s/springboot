@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.demo.common.exception.BusinessException;
+import com.example.demo.dto.ArchiveVO;
 import com.example.demo.dto.ArticleDTO;
 import com.example.demo.dto.ArticleVO;
 import com.example.demo.model.entity.*;
@@ -15,8 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.Collections;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -112,6 +113,38 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 .createTime(article.getCreateTime())
                 .updateTime(article.getUpdateTime())
                 .build();
+    }
+
+    // 文章归档：按年月分组统计
+    @Override
+    public List<ArchiveVO> getArchive() {
+        List<Article> articles = list(new LambdaQueryWrapper<Article>()
+                .eq(Article::getStatus, 1)
+                .orderByDesc(Article::getCreateTime));
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM");
+        Map<String, List<Article>> grouped = articles.stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getCreateTime().format(fmt),
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        List<ArchiveVO> result = new ArrayList<>();
+        for (Map.Entry<String, List<Article>> entry : grouped.entrySet()) {
+            List<ArchiveVO.Item> items = entry.getValue().stream()
+                    .map(a -> ArchiveVO.Item.builder()
+                            .id(a.getId())
+                            .title(a.getTitle())
+                            .createTime(a.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                            .build())
+                    .collect(Collectors.toList());
+            result.add(ArchiveVO.builder()
+                    .yearMonth(entry.getKey())
+                    .count(items.size())
+                    .articles(items)
+                    .build());
+        }
+        return result;
     }
 
     // 发布文章：保存文章 + 关联标签

@@ -30,27 +30,27 @@ const routes = [
       {
         path: 'categories',
         name: 'Categories',
-        component: () => import('@/views/Placeholder.vue')
+        component: () => import('@/views/Categories.vue')
       },
       {
         path: 'tags',
         name: 'Tags',
-        component: () => import('@/views/Placeholder.vue')
+        component: () => import('@/views/Tags.vue')
       },
       {
         path: 'comments',
         name: 'Comments',
-        component: () => import('@/views/Placeholder.vue')
+        component: () => import('@/views/Comments.vue')
       },
       {
         path: 'links',
         name: 'Links',
-        component: () => import('@/views/Placeholder.vue')
+        component: () => import('@/views/FriendLinks.vue')
       },
       {
         path: 'settings',
         name: 'Settings',
-        component: () => import('@/views/Placeholder.vue')
+        component: () => import('@/views/Settings.vue')
       }
     ]
   }

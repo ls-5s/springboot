@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.demo.common.Result;
+import com.example.demo.dto.ArchiveVO;
 import com.example.demo.dto.ArticleDTO;
 import com.example.demo.dto.ArticleVO;
 import com.example.demo.model.entity.Article;
@@ -13,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 // 文章控制器：列表（公开）、发布/修改/删除（需要登录）
 @Tag(name = "文章接口")
@@ -43,6 +46,14 @@ public class ArticleController {
     public Result<ArticleVO> detail(@PathVariable Long id) {
         ArticleVO vo = articleService.getArticleDetail(id);
         return Result.success(vo);
+    }
+
+    // GET /api/articles/archive — 文章归档（公开，注：必须在 /{id} 之前注册）
+    @Operation(summary = "文章归档")
+    @GetMapping("/archive")
+    public Result<List<ArchiveVO>> archive() {
+        List<ArchiveVO> list = articleService.getArchive();
+        return Result.success(list);
     }
 
     // POST /api/articles — 发布文章
