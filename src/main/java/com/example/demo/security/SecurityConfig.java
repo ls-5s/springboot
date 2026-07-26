@@ -43,6 +43,8 @@ public class SecurityConfig {
                 .requestMatchers("/doc.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // 公开接口：Druid 监控
                 .requestMatchers("/druid/**").permitAll()
+                // 公开接口：Spring Boot Admin 监控
+                .requestMatchers("/applications/**", "/wallboard/**", "/instances/**", "/actuator/**", "/assets/**").permitAll()
                 // 其余所有接口需要携带有效 JWT
                 .anyRequest().authenticated()
             )

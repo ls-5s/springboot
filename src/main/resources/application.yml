@@ -8,8 +8,22 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+  boot:
+    admin:
+      client:
+        url: http://localhost:8080
 
 # JWT 配置
 jwt:
   secret: your-256-bit-secret-key-for-blog-project
   expire: 604800
+
+# Actuator 端点暴露（供 Admin Server 采集指标）
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
